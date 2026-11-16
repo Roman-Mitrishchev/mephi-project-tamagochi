@@ -1,12 +1,8 @@
 """Точка входа в консольную игру."""
 
+from game.constants import STATUS_TEMPLATE
 from game.clicker import SimpleRandomClicker
-from game.exceptions import (
-    InvalidAction,
-    NotEnoughItems,
-    NotEnoughMoney,
-    TamagochiIsGone,
-)
+from game.exceptions import GameError
 from game.game import SimpleGame
 from game.models import Food, Medicine
 from game.tamagochi import SimpleTamagochi
@@ -49,14 +45,9 @@ def main() -> None:
     }
 
     while tamagochi.is_alive():
-        status = game.get_status()
         print(f"\nСумка с едой: {game.food}")
         print(f"Сумка с лекарствами: {game.medicine}")
-        print(
-            f"Голод: {status['hunger']} | Здоровье: {status['hp']} | "
-            f"Энергия: {status['energy']} | Усталость: {status['fatigue']} | "
-            f"Монеты: {status['coins']}"
-        )
+        print(STATUS_TEMPLATE.format(**game.get_status()))
         if tamagochi.is_sick():
             print("Питомец болеет. Отдых менее эффективен.")
         for key, (label, _) in actions.items():
@@ -77,14 +68,8 @@ def main() -> None:
                 print(f"Вы заработали {result} монет.")
             else:
                 print(f"Действие выполнено: {actions[choice][0].lower()}.")
-        except (NotEnoughMoney, NotEnoughItems, InvalidAction) as error:
+        except GameError as error:
             print(error)
-        except TamagochiIsGone as error:
-            print(error)
-            break
-
-    if not tamagochi.is_alive():
-        print(f"{tamagochi.name} погиб. Игра окончена.")
 
 
 if __name__ == "__main__":
