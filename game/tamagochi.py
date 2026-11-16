@@ -3,6 +3,36 @@
 from abc import ABC, abstractmethod
 from random import random
 
+from .constants import (
+    CRITICAL_ENERGY,
+    CRITICAL_HUNGER,
+    DEFAULT_TAMAGOCHI_NAME,
+    ENERGY_DAMAGE,
+    INITIAL_ACTIONS,
+    INITIAL_SICK_STATE,
+    FEED_ENERGY_COST,
+    HUNGER_DAMAGE,
+    INITIAL_ENERGY,
+    INITIAL_FATIGUE,
+    INITIAL_HUNGER,
+    INITIAL_HP,
+    MAX_STAT_VALUE,
+    MIN_STAT_VALUE,
+    PLAY_ENERGY_COST,
+    PLAY_FATIGUE_INCREASE,
+    PLAY_HUNGER_INCREASE,
+    REST_HUNGER_INCREASE,
+    REST_RECOVERY,
+    SICKNESS_CHANCE,
+    SICKNESS_DAMAGE,
+    SICKNESS_FATIGUE_INCREASE,
+    SICKNESS_HUNGER_THRESHOLD,
+    SICK_REST_RECOVERY,
+    UPDATE_ENERGY_DECREASE,
+    UPDATE_FATIGUE_INCREASE,
+    UPDATE_HUNGER_INCREASE,
+)
+from .exceptions import TamagochiIsGone
 from .models import Food, Medicine
 
 
@@ -54,22 +84,24 @@ class AbstractTamagochi(ABC):
 class SimpleTamagochi(AbstractTamagochi):
     """Питомец с показателями голода, здоровья, энергии и усталости."""
 
-    MAX_VALUE = 100
-    MIN_VALUE = 0
-
-    def __init__(self, name: str = "Бублик") -> None:
+    def __init__(self, name: str = DEFAULT_TAMAGOCHI_NAME) -> None:
         """Создаёт питомца с начальными характеристиками.
 
         Args:
             name: Имя питомца.
         """
-        self.name = name
-        self._hunger = 20
-        self._fatigue = 10
-        self._hp = 100
-        self._energy = 90
-        self._sick = False
-        self._actions = 0
+        self._name = name
+        self._hunger = INITIAL_HUNGER
+        self._fatigue = INITIAL_FATIGUE
+        self._hp = INITIAL_HP
+        self._energy = INITIAL_ENERGY
+        self._sick = INITIAL_SICK_STATE
+        self._actions = INITIAL_ACTIONS
+
+    @property
+    def name(self) -> str:
+        """Возвращает имя питомца."""
+        return self._name
 
     @property
     def status(self) -> dict[str, int]:
@@ -91,14 +123,12 @@ class SimpleTamagochi(AbstractTamagochi):
 
     def _ensure_alive(self) -> None:
         """Проверяет, можно ли продолжать взаимодействие с питомцем."""
-        from .exceptions import TamagochiIsGone
-
         if not self.is_alive():
             raise TamagochiIsGone("Питомец погиб. Игра окончена.")
 
     def _limit(self, value: int) -> int:
         """Ограничивает показатель допустимым диапазоном."""
-        return max(self.MIN_VALUE, min(self.MAX_VALUE, value))
+        return max(MIN_STAT_VALUE, min(MAX_STAT_VALUE, value))
 
     def feed(self, food: Food) -> None:
         """Уменьшает голод и расходует часть энергии.
@@ -108,24 +138,24 @@ class SimpleTamagochi(AbstractTamagochi):
         """
         self._ensure_alive()
         self._hunger = self._limit(self._hunger - food.satiety)
-        self._energy = self._limit(self._energy - 5)
+        self._energy = self._limit(self._energy - FEED_ENERGY_COST)
         self.update()
 
     def play(self) -> None:
         """Уменьшает голод и энергию, повышает усталость."""
         self._ensure_alive()
-        self._hunger = self._limit(self._hunger + 10)
-        self._energy = self._limit(self._energy - 15)
-        self._fatigue = self._limit(self._fatigue + 15)
+        self._hunger = self._limit(self._hunger + PLAY_HUNGER_INCREASE)
+        self._energy = self._limit(self._energy - PLAY_ENERGY_COST)
+        self._fatigue = self._limit(self._fatigue + PLAY_FATIGUE_INCREASE)
         self.update()
 
     def rest(self) -> None:
         """Восстанавливает энергию и снижает усталость."""
         self._ensure_alive()
-        recovery = 25 if not self._sick else 10
+        recovery = REST_RECOVERY if not self._sick else SICK_REST_RECOVERY
         self._energy = self._limit(self._energy + recovery)
         self._fatigue = self._limit(self._fatigue - recovery)
-        self._hunger = self._limit(self._hunger + 5)
+        self._hunger = self._limit(self._hunger + REST_HUNGER_INCREASE)
         self.update()
 
     def heal(self, medicine: Medicine) -> None:
@@ -135,29 +165,29 @@ class SimpleTamagochi(AbstractTamagochi):
             medicine: Используемое лекарство.
         """
         self._ensure_alive()
-        if medicine.is_empty():
-            from .exceptions import NotEnoughItems
-
-            raise NotEnoughItems("Лекарство закончилось.")
+        medicine.use()
         self._hp = self._limit(self._hp + medicine.heal_hp)
-        medicine.uses += 1
         self._sick = False
         self.update()
 
     def update(self) -> None:
         """Изменяет характеристики и проверяет вероятность заболевания."""
-        if not self.is_alive():
-            return
+        self._ensure_alive()
         self._actions += 1
-        self._hunger = self._limit(self._hunger + 3)
-        self._fatigue = self._limit(self._fatigue + 2)
-        self._energy = self._limit(self._energy - 2)
-        if self._hunger >= 90:
-            self._hp = self._limit(self._hp - 5)
-        if self._energy <= 10:
-            self._hp = self._limit(self._hp - 3)
+        self._hunger = self._limit(self._hunger + UPDATE_HUNGER_INCREASE)
+        self._fatigue = self._limit(self._fatigue + UPDATE_FATIGUE_INCREASE)
+        self._energy = self._limit(self._energy - UPDATE_ENERGY_DECREASE)
+        if self._hunger >= CRITICAL_HUNGER:
+            self._hp = self._limit(self._hp - HUNGER_DAMAGE)
+        if self._energy <= CRITICAL_ENERGY:
+            self._hp = self._limit(self._hp - ENERGY_DAMAGE)
         if self._sick:
-            self._hp = self._limit(self._hp - 2)
-            self._fatigue = self._limit(self._fatigue + 5)
-        elif self._hunger >= 70 and random() < 0.15:
+            self._hp = self._limit(self._hp - SICKNESS_DAMAGE)
+            self._fatigue = self._limit(
+                self._fatigue + SICKNESS_FATIGUE_INCREASE
+            )
+        elif (
+            self._hunger >= SICKNESS_HUNGER_THRESHOLD
+            and random() < SICKNESS_CHANCE
+        ):
             self._sick = True
