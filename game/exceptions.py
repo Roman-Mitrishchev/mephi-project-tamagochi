@@ -15,3 +15,16 @@ class NotEnoughItems(Exception):
 
 class InvalidAction(Exception):
     """Возникает при невозможности выполнить игровое действие."""
+
+
+class GameError(Exception):
+    """Базовое исключение для ошибок игровой логики."""
+
+
+class TamagochiIsGone(GameError):
+    """Питомец погиб."""
+
+
+class NotEnoughMoney(GameError):
+    """Не хватает монет для покупки."""
+    
