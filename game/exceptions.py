@@ -16,3 +16,7 @@ class NotEnoughMoney(GameError):
 class InvalidAction(GameError):
     """Возникает при попытке выполнить недопустимое действие."""
     
+
+class NotEnoughItems(GameError):
+    """Возникает при попытке использовать предмет, которого нет в инвентаре."""
+    
