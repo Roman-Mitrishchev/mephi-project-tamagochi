@@ -32,7 +32,7 @@ from .constants import (
     UPDATE_FATIGUE_INCREASE,
     UPDATE_HUNGER_INCREASE,
 )
-from .exceptions import TamagochiIsGone
+from .exceptions import InvalidAction, TamagochiIsGone
 from .models import Food, Medicine
 
 
