@@ -29,6 +29,11 @@ class Medicine:
     number_of_uses: int
     uses: int = 0
 
+    def use(self) -> int:
+        """Увеличивает счётчик использований и возвращает величину лечения."""
+        self.uses += 1
+        return self.heal_hp
+
     def is_empty(self) -> bool:
         """Проверяет, исчерпано ли количество применений лекарства."""
         return self.uses >= self.number_of_uses
