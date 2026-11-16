@@ -9,10 +9,6 @@ class NotEnoughMoney(Exception):
     """Возникает при недостатке монет для покупки."""
 
 
-class NotEnoughItems(Exception):
-    """Возникает, если в инвентаре нет нужного предмета."""
-
-
 class InvalidAction(Exception):
     """Возникает при невозможности выполнить игровое действие."""
 
