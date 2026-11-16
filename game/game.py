@@ -1,14 +1,15 @@
 """Модуль с логикой управления игрой."""
 
 from abc import ABC, abstractmethod
+from copy import copy
 from typing import Any
 
 from .clicker import AbstractClicker
+from .constants import STARTING_COINS
 from .exceptions import (
     InvalidAction,
     NotEnoughItems,
     NotEnoughMoney,
-    TamagochiIsGone,
 )
 from .models import Food, Medicine
 from .tamagochi import AbstractTamagochi
@@ -99,13 +100,13 @@ class SimpleGame(AbstractGame):
             all_food: Каталог доступной еды.
             all_medicine: Каталог доступных лекарств.
         """
-        self.tamagochi = tamagochi
+        self._tamagochi = tamagochi
         self._clicker = clicker
         self._all_food = list(all_food)
         self._all_medicine = list(all_medicine)
         self._food: list[Food] = []
         self._medicine: list[Medicine] = []
-        self._coins = 50
+        self._coins = STARTING_COINS
 
     @property
     def food(self) -> list[Food]:
@@ -116,11 +117,6 @@ class SimpleGame(AbstractGame):
     def medicine(self) -> list[Medicine]:
         """Возвращает копию сумки с лекарствами."""
         return list(self._medicine)
-
-    def _ensure_alive(self) -> None:
-        """Запрещает действия после смерти питомца."""
-        if not self.tamagochi.is_alive():
-            raise TamagochiIsGone("Питомец погиб. Игра окончена.")
 
     def _choose_item(self, items: list[Any], item_type: str) -> int:
         """Запрашивает у пользователя номер предмета.
@@ -154,16 +150,14 @@ class SimpleGame(AbstractGame):
         Returns:
             Количество заработанных монет.
         """
-        self._ensure_alive()
         self._clicker.click()
         income = self._clicker.income_per_click
         self._coins += income
-        self.tamagochi.update()
+        self._tamagochi.update()
         return income
 
     def buy_food(self) -> None:
         """Покупает выбранный продукт из каталога еды."""
-        self._ensure_alive()
         index = self._choose_item(self._all_food, "еду")
         item = self._all_food[index]
         if self._coins < item.price:
@@ -173,51 +167,40 @@ class SimpleGame(AbstractGame):
 
     def buy_medicine(self) -> None:
         """Покупает выбранное лекарство из каталога."""
-        self._ensure_alive()
         index = self._choose_item(self._all_medicine, "лекарство")
         item = self._all_medicine[index]
         if self._coins < item.price:
             raise NotEnoughMoney("Недостаточно монет для покупки лекарства.")
         self._coins -= item.price
-        self._medicine.append(
-            Medicine(
-                name=item.name,
-                price=item.price,
-                heal_hp=item.heal_hp,
-                number_of_uses=item.number_of_uses,
-            )
-        )
+        self._medicine.append(copy(item))
 
     def feed_tamagochi(self) -> None:
         """Использует выбранную еду из инвентаря."""
-        self._ensure_alive()
         index = self._choose_item(self._food, "еду из сумки")
-        item = self._food.pop(index)
-        self.tamagochi.feed(item)
+        item = self._food[index]
+        self._tamagochi.feed(item)
+        self._food.pop(index)
 
     def heal_tamagochi(self) -> None:
         """Использует выбранное лекарство из инвентаря."""
-        self._ensure_alive()
         index = self._choose_item(self._medicine, "лекарство")
         item = self._medicine[index]
-        self.tamagochi.heal(item)
+        self._tamagochi.heal(item)
         if item.is_empty():
             self._medicine.pop(index)
 
     def rest_tamagochi(self) -> None:
         """Обновляет состояние питомца после отдыха."""
-        self._ensure_alive()
-        self.tamagochi.rest()
+        self._tamagochi.rest()
 
     def play_with_tamagochi(self) -> None:
         """Обновляет состояние питомца после игры."""
-        self._ensure_alive()
-        self.tamagochi.play()
+        self._tamagochi.play()
 
     def get_status(self) -> dict[str, Any]:
         """Возвращает показатели питомца и количество монет."""
-        status: dict[str, Any] = self.tamagochi.status.copy()
+        status: dict[str, Any] = self._tamagochi.status.copy()
         status["coins"] = self._coins
-        status["alive"] = self.tamagochi.is_alive()
-        status["sick"] = self.tamagochi.is_sick()
+        status["alive"] = self._tamagochi.is_alive()
+        status["sick"] = self._tamagochi.is_sick()
         return status
