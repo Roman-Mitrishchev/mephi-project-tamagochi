@@ -169,10 +169,12 @@ class SimpleTamagochi(AbstractTamagochi):
         if medicine.is_empty():
             raise InvalidAction("Лекарство закончилось")
 
+        self.update()
+        self._ensure_alive()
+
         healing = medicine.use()
         self._hp = self._limit(self._hp + healing)
         self._sick = False
-        self.update()
 
     def update(self) -> None:
         """Изменяет характеристики и проверяет вероятность заболевания."""
