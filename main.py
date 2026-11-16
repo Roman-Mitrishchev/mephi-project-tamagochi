@@ -1,7 +1,8 @@
 """Точка входа в консольную игру."""
 
-from game.clicker import SimpleRandomClicker
 from game.constants import STATUS_TEMPLATE
+
+from game.clicker import SimpleRandomClicker
 from game.exceptions import GameError
 from game.game import SimpleGame
 from game.models import Food, Medicine
