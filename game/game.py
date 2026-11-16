@@ -202,5 +202,5 @@ class SimpleGame(AbstractGame):
         status: dict[str, Any] = self._tamagochi.status.copy()
         status["coins"] = self._coins
         status["alive"] = self._tamagochi.is_alive()
-        status["sick"] = self._tamagochi.is_sick()
+        status["is_sick"] = self._tamagochi.is_sick()
         return status
