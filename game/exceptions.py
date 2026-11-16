@@ -11,4 +11,8 @@ class TamagochiIsGone(GameError):
 
 class NotEnoughMoney(GameError):
     """Возникает при недостатке монет для покупки."""
+
+
+class InvalidAction(GameError):
+    """Возникает при попытке выполнить недопустимое действие."""
     
