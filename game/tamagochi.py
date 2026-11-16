@@ -159,6 +159,10 @@ class SimpleTamagochi(AbstractTamagochi):
         self.update()
 
     def heal(self, medicine: Medicine) -> None:
+        if medicine.is_empty():
+            raise InvalidAction("Лекарство закончилось")
+        medicine.uses += 1
+        self._hp = min(self._hp + medicine.heal_hp, MAX_STAT_VALUE)
         """Восстанавливает здоровье и расходует одно применение лекарства.
 
         Args:
